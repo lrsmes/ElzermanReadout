@@ -1,0 +1,5 @@
+/.idea/
+
+*.hdf5
+
+/Data_denoising_via_encoder/
