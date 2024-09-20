@@ -36,11 +36,11 @@ def create_cut_file(file_path, dir):
 def main():
     # Get the current working directory
     current_dir = os.getcwd()
-    data_dir = os.path.join(current_dir, 'data_bias')
+    data_dir = os.path.join(current_dir, 'data')
     figures_dir = os.path.join(current_dir, 'Figures_bias')
 
     file_name = '538_2.1T_TP_vs_tload'
-    hdf5_file_path = os.path.join(current_dir, 'data_bias', '{}.hdf5'.format(file_name))
+    hdf5_file_path = os.path.join(current_dir, data_dir, '{}.hdf5'.format(file_name))
 
     create_cut_file(hdf5_file_path, data_dir)
 

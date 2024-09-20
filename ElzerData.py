@@ -154,25 +154,25 @@ class ElzerData(HDF5Data):
                 self.set_n_cycles()
             if self.trace_reference is None:
                 self.trace_loading_with_reference()
-
-            # Convert trace_reference to np.int32
-            self.trace_reference = self.trace_reference.astype(np.float32)
-
             end = self.cycle_length * self.n_cycles
-
+            #print(end)
             shaped_data = [self.trace_reference[:n, 0, self.trace_order[i]].T for i, n in enumerate(end)]
             self.reshaped_data = shaped_data
-
+            # for i, trace in enumerate(self.reshaped_data):
+            #     #print(trace)
+            #     print(f"Data {i} shape:", trace.shape)
         except Exception as e:
             print(f"Error reshaping traces: {e}")
 
+    """
     def cut_traces(self):
-        """
-        Cut the traces according to t_load, t_ini, and t_read.
-        """
+        
+        Cut the traces according to t_load, t_ini, and t_read
+        
         try:
             self.set_data()
             self.set_trace_shape()
+            self.set_measure_dim()
             if self.trace_reference is None:
                 self.trace_loading_with_reference()
             if self.n_cycles is None:
@@ -181,39 +181,33 @@ class ElzerData(HDF5Data):
                 self.set_t_load()
             array_length = self.shape_trace[0]
             #print(array_length)
-            self.reps = 1000
+            self.reps = 1000#self.shape_data[1]
             n_slices = [n * self.reps for n in self.n_cycles]
             #print("n_slices:", n_slices)
 
-            length_array = [np.full(n, self.cycle_length[i]) for i, n in enumerate(n_slices)]
+            length_array = [np.full(n, self.cycle_length[i], dtype=np.int32) for i, n in enumerate(n_slices)]
             length_array = np.concatenate(length_array, axis=None)
             #print(length_array)
             #print("length_array shape:", length_array.shape)
 
-            slice_indices = np.cumsum(length_array[:-1]) #[np.cumsum(length_arr[:-1]) for length_arr in length_array]
+            slice_indices = np.cumsum(length_array[:-1])
             #print(slice_indices)
             
             #print("slice_indices shape:", slice_indices.shape)
 
-            flat_traces_con = np.concatenate(self.reshaped_data, axis=None)
-            flat_traces = flat_traces_con.flatten() #[arr.flatten() for arr in flat_traces_con]
+            flat_traces_con = np.concatenate(self.reshaped_data, axis=None).astype(np.float32)
+            #flat_traces = flat_traces_con.flatten()
 
             #print("flat_traces shape:", flat_traces.shape)
 
-            sliced_traces = np.split(flat_traces, slice_indices) #np.array([np.split(flat_trace, slice_index) for flat_trace, slice_index in zip(flat_traces, slice_indices)], dtype=np.float32)
+            sliced_traces = np.split(flat_traces_con, slice_indices)
             self.sliced_traces = sliced_traces
 
-            #for flat_trace, slice_index in zip(flat_traces, slice_indices):
-
-
-            self.sliced_array = [np.asarray(sliced_traces[i * n:(i + 1) * n]) for i, n in enumerate(n_slices)]
+            self.sliced_array = [np.asarray(sliced_traces[i * n:(i + 1) * n], dtype=object) for i, n in enumerate(n_slices)] #, dtype=np.ndarray
             #self.sliced_array = sliced_traces
             #print("Number of slices:", len(self.sliced_array))
-            """
-            for i, trace in enumerate(self.sliced_array):
-                #print(f"Slice {i} shape:", trace.shape)
-            """
-
+            
+            print(self.sliced_array[0].shape)
             ini_index = np.int32(self.t_ini * self.sampling_rate)
             load_index = np.int32(self.t_load[0] * self.sampling_rate + ini_index)
             #print("ini_index:", ini_index)
@@ -224,6 +218,44 @@ class ElzerData(HDF5Data):
             #     print(f"Read trace {i} shape:", array.shape)
 
             self.read_traces = read_traces
+        except Exception as e:
+            print(f"Error slicing traces: {e}")
+    """
+
+    def cut_traces(self):
+        """
+        Cut the traces according to t_load, t_ini, and t_read.
+        The resulting shape should be (list_entries, number_of_cycles, cycle_length).
+        """
+        try:
+            # Ensure the data and parameters are set
+            self.set_data()
+            self.set_trace_shape()
+
+            if self.trace_reference is None:
+                self.trace_loading_with_reference()
+            if self.n_cycles is None:
+                self.set_n_cycles()
+            if self.t_load is None:
+                self.set_t_load()
+
+            # Using list comprehension to reshape arrays based on n_cycles and cycle_length
+            sliced_array = [
+                array[:self.n_cycles[i] * self.cycle_length[i]].reshape(self.n_cycles[i], self.cycle_length[i], -1)
+                for i, array in enumerate(self.reshaped_data)]
+
+            # Store the sliced array
+            self.sliced_array = sliced_array
+
+            # Compute index values for further processing based on t_load and t_ini
+            ini_index = np.int32(self.t_ini * self.sampling_rate)
+            load_index = np.int32(self.t_load[0] * self.sampling_rate + ini_index)
+
+            # Read the required portion of each trace based on the calculated load index
+            self.read_traces = [array[:, load_index[i]:, :] for i, array in enumerate(self.sliced_array)]
+
+        except MemoryError:
+            print(f"Memory Error: Unable to allocate sufficient memory for the operation.")
         except Exception as e:
             print(f"Error slicing traces: {e}")
 
