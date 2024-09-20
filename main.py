@@ -29,7 +29,7 @@ time_spacing= "Traces/Alazar Slytherin - Ch1 - Data_t0dt"
 def create_cut_file(file_path, dir):
     start_time = time.time()
     test = ElzerData(readpath=file_path, wdir=dir, t_ini=1000, t_read=1000,  sampling_rate=5)
-    test.create_new_file('2.1T_elzerman')
+    test.create_new_file_only_traces('2.1T_elzerman')
     elapsed_time = time.time() - start_time
     print(elapsed_time)
 

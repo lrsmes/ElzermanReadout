@@ -156,7 +156,7 @@ class ElzerData(HDF5Data):
                 self.trace_loading_with_reference()
             end = self.cycle_length * self.n_cycles
             #print(end)
-            shaped_data = [self.trace_reference[:n, 0, self.trace_order[i]].T for i, n in enumerate(end)]
+            shaped_data = [self.trace_reference[:n, 0, self.trace_order[:, i]].T for i, n in enumerate(end)]
             self.reshaped_data = shaped_data
             # for i, trace in enumerate(self.reshaped_data):
             #     #print(trace)
@@ -241,7 +241,7 @@ class ElzerData(HDF5Data):
 
             # Using list comprehension to reshape arrays based on n_cycles and cycle_length
             sliced_array = [
-                array[:self.n_cycles[i] * self.cycle_length[i]].reshape(self.n_cycles[i], self.cycle_length[i], -1)
+                array.reshape(self.n_cycles[i]*self.measure_dim[0], self.cycle_length[i])
                 for i, array in enumerate(self.reshaped_data)]
 
             # Store the sliced array
